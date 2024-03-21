@@ -137,37 +137,16 @@
              }
         }
 
-        function handleFileInputChange() {
-         const statusMessage = document.getElementById('statusMessage');
-         const inputElement = document.getElementById('imageInput');
-         const file = inputElement.files[0];
-
-         if (!file) {
-               statusMessage.textContent = 'No file selected.';
-             return;
-          }
-
-         const formData = new FormData();
-         formData.append('image', file);
-
-         const fetchOptions = {
-             method: 'POST',
-             body: formData,
-             };
-
-         fetch('/upload', fetchOptions)
-         .then(response => response.json())
-         .then(data => {
-            if (data.success) {
-                statusMessage.textContent = `Image uploaded successfully. Image Path: ${data.firebaseDownloadURL}`;
-                displaySelectedImage(file);
-            } else {
-                statusMessage.textContent = 'Image upload failed.';
+        // Function to handle image change
+        function handleImageChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.body.style.backgroundImage = `url(${e.target.result})`;
+                }
+                reader.readAsDataURL(file);
             }
-         })
-         .catch(error => {
-            console.error('Error:', error);
-         });
         }
 
         // Function to display selected image
