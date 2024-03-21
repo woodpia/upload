@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Positioning Tool V0.0.1</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        h1 {
+            color: #3498db;
+            margin-top: 20px;
+        }
+
+        form {
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        button {
+            background-color: #2ecc71;
+            color: #fff;
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 3px;
+        }
+
+        #statusMessage {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>AI Positioning Tool V0.0.1</h1>
+    <form id="imageUploadForm" enctype="multipart/form-data">
+        <input type="file" name="image" id="imageInput" accept="image/*" />
+        <button type="button" onclick="uploadFromDevice()">Upload from Device</button>
+        <button type="button" onclick="captureFromCamera()">Capture from Camera</button>
+    </form>
+    <div id="statusMessage"></div>
+
+
+    <script src="https://www.gstatic.com/firebasejs/9.3.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.3.0/firebase-storage-compat.js"></script>
+    <script>
+        // Firebase configuration (same as firebase-config.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCz8yUV9ku9VM2tigXplM-yRVWnBkxQ_g0",
+            authDomain: "woodpiastorage.firebaseapp.com",
+            projectId: "woodpiastorage",
+            storageBucket: "woodpiastorage.appspot.com",
+            messagingSenderId: "200114601101",
+            appId: "1:200114601101:web:7f87205b148d190f9276c4",
+            measurementId: "G-C4TEHSC5M5"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Function to handle uploading from device
+        function uploadFromDevice() {
+            const inputElement = document.getElementById('imageInput');
+            inputElement.click();
+        }
+
+       function captureFromCamera() {
+          const statusMessage = document.getElementById('statusMessage');
+
+         navigator.mediaDevices.getUserMedia({ video: true })
+         .then(handleSuccess)
+         .catch(handleError);
+
+         function handleSuccess(stream) {
+             const video = document.createElement('video');
+              video.srcObject = stream;
+             video.setAttribute('autoplay', 'true');
+             document.body.appendChild(video);
+
+             const captureButton = document.createElement('button');
+             captureButton.textContent = 'Capture Image';
+             captureButton.addEventListener('click', () => captureFrame(video, stream));
+             document.body.appendChild(captureButton);
+         }
+
+         function handleError(error) {
+              console.error('Error accessing camera:', error);
+         }
+
+         function captureFrame(video, stream) {
+              video.pause();
+
+             const canvas = document.createElement('canvas');
+             const context = canvas.getContext('2d');
+             canvas.width = video.videoWidth;
+             canvas.height = video.videoHeight;
+             context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+             canvas.toBlob(blob => {
+             const file = new File([blob], 'captured_image.png', { type: 'image/png' });
+
+             // Send the captured image to the server for uploading to the cloud
+              uploadCapturedImage(file);
+             }, 'image/png');
+
+             stream.getTracks().forEach(track => track.stop());
+              video.remove();
+             }
+        }
+
+        function handleFileInputChange() {
+         const statusMessage = document.getElementById('statusMessage');
+         const inputElement = document.getElementById('imageInput');
+         const file = inputElement.files[0];
+
+         if (!file) {
+               statusMessage.textContent = 'No file selected.';
+             return;
+          }
+
+         const formData = new FormData();
+         formData.append('image', file);
+
+         const fetchOptions = {
+             method: 'POST',
+             body: formData,
+             };
+
+         fetch('/upload', fetchOptions)
+         .then(response => response.json())
+         .then(data => {
+            if (data.success) {
+                statusMessage.textContent = `Image uploaded successfully. Image Path: ${data.firebaseDownloadURL}`;
+                displaySelectedImage(file);
+            } else {
+                statusMessage.textContent = 'Image upload failed.';
+            }
+         })
+         .catch(error => {
+            console.error('Error:', error);
+         });
+        }
+
+        // Function to display selected image
+        function displaySelectedImage(imageFile) {
+            // Implementation removed for brevity
+        }
+
+        // Event listener for file input change
+        const inputElement = document.getElementById('imageInput');
+        inputElement.addEventListener('change', handleFileInputChange);
+
+        // Function to upload captured image
+     function uploadCapturedImage(imageFile) {
+         const formData = new FormData();
+         formData.append('image', imageFile);
+
+         const fetchOptions = {
+         method: 'POST',
+         body: formData,
+          };
+
+         fetch('/upload', fetchOptions)
+         .then(response => response.json())
+         .then(data => {
+            if (data.success) {
+                console.log('Image uploaded successfully. Image Path:', data.firebaseDownloadURL);
+                // Optionally, display the uploaded image or perform other actions
+            } else {
+                console.error('Image upload failed.');
+            }
+         })
+         .catch(error => {
+            console.error('Error:', error);
+         });
+         }
+         
+    </script>
+</body>
+
+</html>
